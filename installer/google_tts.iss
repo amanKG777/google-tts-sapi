@@ -135,7 +135,7 @@ begin
     begin
       DownloadPage.Clear;
 
-      ; Primary download: from GitHub repository (voices/ directory)
+      // Primary download: from GitHub repository (voices/ directory)
       if NeedMulti then
         DownloadPage.Add('https://raw.githubusercontent.com/amanKG777/google-tts-sapi/main/voices/en-us-x-multi.zvoice', 'en-us-x-multi.zvoice', '');
       if NeedSeanet then
@@ -153,7 +153,7 @@ begin
           end
           else
           begin
-            ; Fallback: if GitHub raw returns 404 (e.g. repo is private) or fails, fallback to official Google CDN
+            // Fallback: if GitHub raw returns 404 (e.g. repo is private) or fails, fallback to official Google CDN
             Log('GitHub download failed or unavailable, trying official Google CDN...');
             DownloadPage.Clear;
             if NeedMulti then
