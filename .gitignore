@@ -1,0 +1,25 @@
+# Build outputs
+build/
+dist/
+out/
+bin/
+
+# Compiled binaries and symbols
+*.exe
+*.dll
+*.lib
+*.exp
+*.pdb
+*.ilk
+*.obj
+
+# IDE and tooling
+.vs/
+*.user
+*.suo
+*.sln.docstates
+.vscode/
+
+# OS files
+Thumbs.db
+[Dd]esktop.ini
