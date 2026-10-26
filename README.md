@@ -57,7 +57,7 @@ Start Menu → *Google TTS Voice Manager*.
 You need Windows 10/11, Visual Studio 2022 (MSVC v143, C++17), CMake 3.20+ and Inno Setup 6.2+. `server.exe` and `bindings_main.wasm` come from google-tts-rs.
 
 ```powershell
-git clone https://github.com/your-username/google-tts-sapi.git
+git clone https://github.com/amanKG777/google-tts-sapi.git
 cd google-tts-sapi
 
 # 64-bit
