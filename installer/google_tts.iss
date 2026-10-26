@@ -192,11 +192,11 @@ begin
     ForceDirectories(VoicesDir);
     if FileExists(ExpandConstant('{tmp}\en-us-x-multi.zvoice')) then
     begin
-      FileCopy(ExpandConstant('{tmp}\en-us-x-multi.zvoice'), VoicesDir + '\en-us-x-multi.zvoice', False);
+      CopyFile(ExpandConstant('{tmp}\en-us-x-multi.zvoice'), VoicesDir + '\en-us-x-multi.zvoice', False);
     end;
     if FileExists(ExpandConstant('{tmp}\en-us-x-multi-seanet.zvoice')) then
     begin
-      FileCopy(ExpandConstant('{tmp}\en-us-x-multi-seanet.zvoice'), VoicesDir + '\en-us-x-multi-seanet.zvoice', False);
+      CopyFile(ExpandConstant('{tmp}\en-us-x-multi-seanet.zvoice'), VoicesDir + '\en-us-x-multi-seanet.zvoice', False);
     end;
   end;
 end;
