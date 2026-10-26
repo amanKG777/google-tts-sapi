@@ -34,8 +34,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "voice_en_us_multi"; Description: "Install US English Chrome OS voice pack (Standard, 17 voices)"; GroupDescription: "Starter Voice Packages to Install:"
-Name: "voice_en_us_seanet"; Description: "Install US English Natural voice pack (Neural, 17 voices)"; GroupDescription: "Starter Voice Packages to Install:"
+Name: "voice_en_us_multi"; Description: "Download and install US English Standard voices (17 voices, ~14.6 MB)"; GroupDescription: "Starter Voice Packages (Downloaded during setup):"
+Name: "voice_en_us_seanet"; Description: "Download and install US English Natural voices (17 voices, ~4.2 MB)"; GroupDescription: "Starter Voice Packages (Downloaded during setup):"
 
 [Files]
 ; 64-bit SAPI COM engine
@@ -59,11 +59,8 @@ Source: "..\dist\staging\WasmTtsEngine\*"; DestDir: "{app}\WasmTtsEngine"; \
 Source: "..\dist\staging\bindings_main.wasm"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\dist\staging\voices.json"; DestDir: "{app}"; Flags: ignoreversion
 
-; Optional starter voice packages
-Source: "..\dist\staging\voices\en-us-x-multi.zvoice"; DestDir: "{app}\voices"; \
-    Flags: ignoreversion skipifsourcedoesntexist; Tasks: voice_en_us_multi voice_en_us_seanet
-Source: "..\dist\staging\voices\en-us-x-multi-seanet.zvoice"; DestDir: "{app}\voices"; \
-    Flags: ignoreversion skipifsourcedoesntexist; Tasks: voice_en_us_seanet
+[Dirs]
+Name: "{app}\voices"
 
 [Registry]
 Root: HKLM; Subkey: "Software\GoogleTTS"; ValueType: string; ValueName: "InstallDir"; ValueData: "{app}"; Flags: uninsdeletekey
@@ -106,6 +103,104 @@ Filename: "regsvr32.exe"; Parameters: "/u /s ""{app}\google_tts_sapi_32.dll"""; 
 Type: filesandordirs; Name: "{localappdata}\GoogleTTS\vfs"
 
 [Code]
+var
+  DownloadPage: TDownloadWizardPage;
+
+function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
+begin
+  if ProgressMax <> 0 then
+    Log(Format('Downloading %s: %d of %d bytes done.', [FileName, Progress, ProgressMax]))
+  else
+    Log(Format('Downloading %s: %d bytes done.', [FileName, Progress]));
+  Result := True;
+end;
+
+procedure InitializeWizard;
+begin
+  DownloadPage := CreateDownloadPage(SetupMessage(msgWizardPreparing), SetupMessage(msgPreparingDesc), @OnDownloadProgress);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  NeedMulti: Boolean;
+  NeedSeanet: Boolean;
+begin
+  Result := True;
+  if CurPageID = wpReady then
+  begin
+    NeedMulti := WizardIsTaskSelected('voice_en_us_multi') or WizardIsTaskSelected('voice_en_us_seanet');
+    NeedSeanet := WizardIsTaskSelected('voice_en_us_seanet');
+
+    if NeedMulti or NeedSeanet then
+    begin
+      DownloadPage.Clear;
+
+      ; Primary download: from GitHub repository (voices/ directory)
+      if NeedMulti then
+        DownloadPage.Add('https://raw.githubusercontent.com/amanKG777/google-tts-sapi/main/voices/en-us-x-multi.zvoice', 'en-us-x-multi.zvoice', '');
+      if NeedSeanet then
+        DownloadPage.Add('https://raw.githubusercontent.com/amanKG777/google-tts-sapi/main/voices/en-us-x-multi-seanet.zvoice', 'en-us-x-multi-seanet.zvoice', '');
+
+      DownloadPage.Show;
+      try
+        try
+          DownloadPage.Download;
+        except
+          if DownloadPage.AbortedByUser then
+          begin
+            Log('Download aborted by user.');
+            Result := False;
+          end
+          else
+          begin
+            ; Fallback: if GitHub raw returns 404 (e.g. repo is private) or fails, fallback to official Google CDN
+            Log('GitHub download failed or unavailable, trying official Google CDN...');
+            DownloadPage.Clear;
+            if NeedMulti then
+              DownloadPage.Add('https://dl.google.com/android/tts/v26/en-us/en-us-x-multi-r83.zvoice', 'en-us-x-multi.zvoice', '');
+            if NeedSeanet then
+              DownloadPage.Add('https://dl.google.com/android/tts/v26/en-us/en-us-x-multi-seanet-r83.zvoice', 'en-us-x-multi-seanet.zvoice', '');
+            try
+              DownloadPage.Download;
+            except
+              if DownloadPage.AbortedByUser then
+                Result := False
+              else
+              begin
+                SuppressibleMsgBox('Could not download starter voice packs at this time.' + #13#10 +
+                                   'Setup will continue anyway. You can download voices anytime using the Google TTS Voice Manager.',
+                                   mbInformation, MB_OK, IDOK);
+                Result := True;
+              end;
+            end;
+          end;
+        end;
+      finally
+        DownloadPage.Hide;
+      end;
+    end;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  VoicesDir: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    VoicesDir := ExpandConstant('{app}\voices');
+    ForceDirectories(VoicesDir);
+    if FileExists(ExpandConstant('{tmp}\en-us-x-multi.zvoice')) then
+    begin
+      FileCopy(ExpandConstant('{tmp}\en-us-x-multi.zvoice'), VoicesDir + '\en-us-x-multi.zvoice', False);
+    end;
+    if FileExists(ExpandConstant('{tmp}\en-us-x-multi-seanet.zvoice')) then
+    begin
+      FileCopy(ExpandConstant('{tmp}\en-us-x-multi-seanet.zvoice'), VoicesDir + '\en-us-x-multi-seanet.zvoice', False);
+    end;
+  end;
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
